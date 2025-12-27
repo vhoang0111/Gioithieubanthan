@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Giới thiệu bản thân</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #eef2f7;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            width: 85%;
+            max-width: 900px;
+            margin: 30px auto;
+            background-color: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        h1, h2 {
+            text-align: center;
+            color: #333;
+        }
+        /* Default images - keep neutral (no forced round) */
+        img {
+            display: block;
+            margin: 15px auto;
+            width: 160px;
+        }
+        /* Avatar rectangular style */
+        .avatar-rect {
+            width: 120px;
+            height: 190px; /* chiều dọc dài hơn gấp đôi chiều ngang */
+            object-fit: cover; /* crop to fill */
+            border-radius: 8px; /* small rounded corners */
+            display: block;
+            margin: 12px auto;
+        }
+        /* Responsive: giảm kích thước trên màn hình nhỏ */
+        @media (max-width: 480px) {
+            .avatar-rect {
+                width: 90px;
+                height: 200px;
+            }
+        }
+        video {
+            display: block;
+            margin: 20px auto;
+            width: 80%;
+            max-width: 500px;
+        }
+        p {
+            font-size: 16px;
+            line-height: 1.6;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        table, th, td {
+            border: 1px solid #999;
+        }
+        th, td {
+            padding: 10px;
+            text-align: center;
+        }
+        th {
+            background-color: #4CAF50;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Giới thiệu về bản thân</h1>
+
+    <!-- Hình ảnh -->
+    <img class="avatar-rect" src="avatar.jpg" alt="Ảnh đại diện">
+
+    <p><strong>Họ tên:</strong> Lê Thị Nhịn</p>
+    <p><strong>Tuổi:</strong> 17</p>
+    <p><strong>Lớp:</strong> 12A4</p>
+    <p><strong>Sở thích:</strong> Nghe nhạc, xem video</p>
+
+    <!-- Video removed per request -->
+
+    <!-- Thời khóa biểu (chỉ buổi sáng) -->
+    <h2>Thời khóa biểu</h2>
+    <table>
+        <tr>
+            <th>Buổi</th>
+            <th>Tiết</th>
+            <th>Thứ 2</th>
+            <th>Thứ 3</th>
+            <th>Thứ 4</th>
+            <th>Thứ 5</th>
+            <th>Thứ 6</th>
+            <th>Thứ 7</th>
+        </tr>
+        <tr>
+            <td rowspan="5">S</td>
+            <td>1</td>
+            <td>Chào cờ</td>
+            <td>Toán</td>
+            <td>Ngữ Văn</td>
+            <td>Tin Học</td>
+            <td>Hoá</td>
+            <td>Hoá Học</td>
+        </tr>
+        <tr>
+            <td>2</td>
+            <td>Hoá</td>
+            <td>Lịch Sử</td>
+            <td>Ngoại Ngữ</td>
+            <td>Ngữ Văn</td>
+            <td>Lịch Sử</td>
+            <td>HDTN</td>
+        </tr>
+        <tr>
+            <td>3</td>
+            <td>Ngoại ngữ</td>
+            <td>Vật Lí</td>
+            <td>Ngoại ngữ</td>
+            <td>GDQP</td>
+            <td>Ngữ Văn</td>
+            <td>HDTN</td>
+        </tr>
+        <tr>
+            <td>4</td>
+            <td>Sinh học</td>
+            <td>Toán</td>
+            <td>Hoá Học</td>
+            <td>Toán</td>
+            <td>Ngữ Văn</td>
+            <td>Vật Lí</td>
+        </tr>
+        <tr>
+            <td>5</td>
+            <td>Sinh học</td>
+            <td>Tin Học</td>
+            <td>Toán</td>
+            <td>Toán</td>
+            <td>Sinh hoạt</td>
+            <td>Vật Lí</td>
+        </tr>
+    </table>
+</div>
+
+</body>
+</html>

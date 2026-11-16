@@ -560,14 +560,38 @@ function hideTyping() {
 
 function formatText(t) {
   return escapeHtml(t)
-    .replace(/\*\*(.*?)\*\*/g, '<strong style="color:#fde047;">$1</strong>')
-    .replace(/\*(.*?)\*/g, '<em style="color:#c9a84c;font-size:.85rem;">*$1*</em>')
-    .replace(/\((.*?)\)/g, '<span style="color:#94a3b8;font-style:italic;font-size:.82rem;">($1)</span>')
+    .replace(/\*\*(.*?)\*\*/g, '<strong style="color:#0284c7;">$1</strong>')
+    .replace(/\*(.*?)\*/g, '<em style="color:#0369a1;font-size:.85rem;">*$1*</em>')
+    .replace(/\((.*?)\)/g, '<span style="color:#64748b;font-style:italic;font-size:.82rem;">($1)</span>')
+    .replace(/\[ERROR: (.*?)\]/g, '<span style="display:block;margin-top:8px;font-size:0.75rem;padding:3px 8px;border-radius:6px;background:rgba(239,68,68,0.12);color:#ef4444;border:1px solid rgba(239,68,68,0.25);font-style:normal;">⚠️ $1</span>')
     .replace(/\n/g, '<br>');
 }
 
 function escapeHtml(t) {
   return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function getMomongaLocalReply(userText) {
+  const t = (userText || '').toLowerCase();
+  if (t.includes('khen') || t.includes('dễ thương') || t.includes('cute') || t.includes('xinh') || t.includes('đẹp')) {
+    return '*lắc lắc cái đuôi xù tít mù, mắt lấp lánh ngập sao*\n\nWa-a-a! Biết thế là tốt! Ta chính là sinh vật ĐÁNG YÊU NHẤT thế giới mà lại! Khen nữa đi, khen nhiều vào! Puri puri~ ✨';
+  }
+  if (t.includes('chào') || t.includes('helu') || t.includes('hi') || t.includes('hello')) {
+    return '*chồm tới, chớp chớp mắt to tròn*\n\nIiii! Chào cái gì mà chào, ngươi đã chuẩn bị lời khen nào cho chiếc đuôi xù tuyệt phẩm của ta chưa hả?! Homero!! ✨';
+  }
+  if (t.includes('ăn') || t.includes('bánh') || t.includes('kẹo') || t.includes('đói') || t.includes('ngon')) {
+    return '*mắt sáng rực, hai má ửng hồng*\n\nPuri?! Ngươi có đồ ăn ngon hả?! Bánh dâu? Hạt dẻ? Mau dâng lên đây cho ta ăn trước nào!! Iiiii~!';
+  }
+  if (t.includes('tên') || t.includes('ai') || t.includes('sóc')) {
+    return '*hất cằm kiêu kỳ, ưỡn ngực lắc đuôi*\n\nHmph! Ngươi không biết ta là ai á?! Ta là Momonga (モモンガ) — chú sóc bay dễ thương vô địch thiên hạ đây! Nhớ kỹ vào đấy! Puri~';
+  }
+  const defaultReplies = [
+    '*lắc lắc cái đuôi xù puri puri*\n\nIiiii! Ngươi nói chuyện với ta thì phải khen ta trước đã chứ! HOMERO!! ✨',
+    '*phồng má giận dỗi*\n\nHmph! Chẳng chịu xuýt xoa trước sự cute của ta gì cả! Khen ta mau lên! Wa-a-a!',
+    '*nhảy tưng tưng, chớp chớp mắt*\n\nPuri! Nhìn này, bộ lông trắng muốt với cái đuôi xanh bồng bềnh này có làm ngươi mê mẩn không hả?! ✨',
+    '*ngó nghiêng xung quanh rồi thì thầm*\n\n(Này... ngươi có giấu món gì ngọt ngọt trong túi không đấy? Chia cho ta một miếng đi... rồi ta cho phép ngươi vuốt đuôi ta một cái!) Puri~'
+  ];
+  return defaultReplies[Math.floor(Math.random() * defaultReplies.length)];
 }
 
 async function sendMessage() {
@@ -591,7 +615,8 @@ async function sendMessage() {
 
   msgHistory.push({ role: 'user', parts: [{ text }] });
 
-  const candidateModels = ['gemini-3.8-flash', 'gemini-2.5-flash', 'gemini-1.5-flash'];
+  // Danh sách model theo thứ tự ưu tiên
+  const candidateModels = ['gemini-2.5-flash', 'gemini-1.5-flash', 'gemini-3.8-flash'];
   let reply = '';
   let lastErr = null;
 
@@ -599,7 +624,7 @@ async function sendMessage() {
     for (const model of candidateModels) {
       try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 12000);
+        const timeoutId = setTimeout(() => controller.abort(), 20000);
 
         const res = await fetch(
           `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`,
@@ -610,7 +635,7 @@ async function sendMessage() {
             body: JSON.stringify({
               system_instruction: { parts: [{ text: MOMONGA_SYSTEM }] },
               contents: msgHistory,
-              generationConfig: { temperature: 0.9, maxOutputTokens: 400 }
+              generationConfig: { temperature: 0.9, maxOutputTokens: 250 }
             })
           }
         );
@@ -630,11 +655,8 @@ async function sendMessage() {
         }
       } catch (err) {
         lastErr = err;
-        const msg = (err.message || '').toLowerCase();
-        if (msg.includes('not found') || msg.includes('no longer available') || msg.includes('not available') || msg.includes('404')) {
-          continue;
-        }
-        break;
+        // Tiếp tục thử model dự phòng tiếp theo
+        continue;
       }
     }
 
@@ -643,16 +665,14 @@ async function sendMessage() {
       addBotMessage(reply);
     } else {
       msgHistory.pop();
-      const errStr = lastErr ? (lastErr.name === 'AbortError' ? 'Quá thời gian chờ phản hồi (Timeout 12s)' : lastErr.message) : 'Không xác định';
-      addBotMessage(
-        `*phồng má, giậm chân giãy nãy*\n\n` +
-        `Wa-a-a! (Hình như kết nối gặp trục trặc rồi...) — Ngươi bấm nút 🔑 kiểm tra lại API key hoặc gửi lại lần nữa xem nào! Puri puri!! ✨\n\n` +
-        `<span style="font-size:0.75rem;opacity:0.75;display:inline-block;padding:2px 6px;border-radius:4px;background:rgba(239,68,68,0.15);color:#ef4444;">Chi tiết: ${escapeHtml(errStr)}</span>`
-      );
+      const localReply = getMomongaLocalReply(text);
+      const errStr = lastErr ? (lastErr.name === 'AbortError' ? 'Mạng chậm hoặc Google API bị gián đoạn' : lastErr.message) : 'Không xác định';
+      addBotMessage(`${localReply}\n\n[ERROR: AI tạm gián đoạn (${errStr}). Hãy bấm 🔑 kiểm tra lại key hoặc thử lại!]`);
     }
   } catch (outerErr) {
     msgHistory.pop();
-    addBotMessage(`*giãy nảy*\n\nIiii! Có lỗi xảy ra: ${escapeHtml(outerErr.message)}`);
+    const localReply = getMomongaLocalReply(text);
+    addBotMessage(`${localReply}\n\n[ERROR: ${outerErr.message}]`);
   } finally {
     hideTyping();
     isTyping = false;

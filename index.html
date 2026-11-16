@@ -160,6 +160,12 @@
     .chat-name { font-family: 'Cinzel', serif; font-size: .9rem; color: #c9a84c; font-weight: 600; }
     .chat-status { font-size: .7rem; color: #6b7280; display: flex; align-items: center; gap: .3rem; }
     .status-dot { width: 6px; height: 6px; border-radius: 50%; background: #22c55e; }
+    .chat-key-btn {
+      background: none; border: none; color: #c9a84c;
+      font-size: 1.05rem; cursor: pointer; padding: .3rem;
+      transition: transform .2s, opacity .2s;
+    }
+    .chat-key-btn:hover { transform: scale(1.15); opacity: .85; }
     .chat-close {
       background: none; border: none; color: #6b7280;
       font-size: 1.1rem; cursor: pointer; padding: .3rem;
@@ -309,6 +315,7 @@
       <div class="chat-name">Ainz Ooal Gown</div>
       <div class="chat-status"><span class="status-dot"></span> Lãnh chúa Nazarick</div>
     </div>
+    <button class="chat-key-btn" onclick="toggleApiBanner()" title="Đổi hoặc kiểm tra API key">🔑</button>
     <button class="chat-close" onclick="toggleChat()">✕</button>
   </div>
 
@@ -396,6 +403,17 @@ function initChat() {
 
 function getApiKey() { return localStorage.getItem('gemini_api_key') || ''; }
 
+function toggleApiBanner() {
+  const banner = document.getElementById('api-banner');
+  const isHidden = banner.style.display === 'none' || !banner.style.display;
+  banner.style.display = isHidden ? 'block' : 'none';
+  if (isHidden) {
+    const input = document.getElementById('api-key-input');
+    input.value = getApiKey();
+    input.focus();
+  }
+}
+
 function saveApiKey() {
   const key = document.getElementById('api-key-input').value.trim();
   if (!key) return alert('Vui lòng nhập API key!');
@@ -403,7 +421,7 @@ function saveApiKey() {
   document.getElementById('api-banner').style.display = 'none';
   document.getElementById('api-key-input').value = '';
   clearMessages();
-  addBotMessage('*tiếng sét vang lên trong đại sảnh*\n\nFumu! Chìa khóa đã được xác nhận. Ta — Ainz Ooal Gown — đã chính thức kết nối với thế giới của ngươi. Hãy nói điều ngươi muốn, thần dân.');
+  addBotMessage('*tiếng sét vang lên trong đại sảnh*\n\nFumu! Chìa khóa đã được cập nhật. Ta — Ainz Ooal Gown — đã sẵn sàng. Hãy nói điều ngươi muốn, thần dân.');
 }
 
 function clearMessages() {
@@ -453,7 +471,9 @@ function hideTyping() {
 
 function formatText(t) {
   return escapeHtml(t)
-    .replace(/\*(.*?)\*/g, '<em style="color:#c9a84c;font-size:.8rem;">*$1*</em>')
+    .replace(/\*\*(.*?)\*\*/g, '<strong style="color:#fde047;">$1</strong>')
+    .replace(/\*(.*?)\*/g, '<em style="color:#c9a84c;font-size:.85rem;">*$1*</em>')
+    .replace(/\((.*?)\)/g, '<span style="color:#94a3b8;font-style:italic;font-size:.82rem;">($1)</span>')
     .replace(/\n/g, '<br>');
 }
 
@@ -469,7 +489,7 @@ async function sendMessage() {
   const apiKey = getApiKey();
   if (!apiKey) {
     document.getElementById('api-banner').style.display = 'block';
-    addBotMessage('Fumu... Ngươi chưa cung cấp chìa khóa. Ta không thể nói chuyện như vậy được.');
+    addBotMessage('Fumu... Ngươi chưa cung cấp chìa khóa. Ta không thể nói chuyện như vậy được. Hãy bấm nút 🔑 để nhập.');
     return;
   }
 
@@ -481,29 +501,46 @@ async function sendMessage() {
 
   msgHistory.push({ role: 'user', parts: [{ text }] });
 
-  try {
-    const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${apiKey}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          system_instruction: { parts: [{ text: MOMONGA_SYSTEM }] },
-          contents: msgHistory,
-          generationConfig: { temperature: 0.9, maxOutputTokens: 400 }
-        })
-      }
-    );
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error?.message || 'API error');
+  const candidateModels = ['gemini-3.8-flash', 'gemini-2.5-flash', 'gemini-1.5-flash'];
+  let reply = '';
+  let lastErr = null;
 
-    const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || '...';
+  for (const model of candidateModels) {
+    try {
+      const res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            system_instruction: { parts: [{ text: MOMONGA_SYSTEM }] },
+            contents: msgHistory,
+            generationConfig: { temperature: 0.9, maxOutputTokens: 400 }
+          })
+        }
+      );
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error?.message || `HTTP ${res.status}`);
+      }
+      reply = data.candidates?.[0]?.content?.parts?.[0]?.text || '...';
+      break;
+    } catch (err) {
+      lastErr = err;
+      const msg = (err.message || '').toLowerCase();
+      if (msg.includes('not found') || msg.includes('no longer available') || msg.includes('not available') || msg.includes('404')) {
+        continue;
+      }
+      break;
+    }
+  }
+
+  hideTyping();
+  if (reply) {
     msgHistory.push({ role: 'model', parts: [{ text: reply }] });
-    hideTyping();
     addBotMessage(reply);
-  } catch (err) {
-    hideTyping();
-    addBotMessage(`*tiếng thở dài từ bộ xương*\n\n(Ugh... có lỗi xảy ra.) — Ta đang bận xử lý việc của Nazarick. Thử lại sau. Lỗi: ${err.message}`);
+  } else {
+    addBotMessage(`*tiếng thở dài từ bộ xương*\n\n(Ugh... có lỗi xảy ra.) — Ta đang bận xử lý việc của Nazarick. Ngươi hãy kiểm tra lại API key hoặc thử lại sau.\n\nChi tiết lỗi: ${lastErr ? lastErr.message : 'Không xác định'}`);
   }
 
   isTyping = false;
